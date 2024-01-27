@@ -8,8 +8,10 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
 
 ## Features include
 - **Aggregation of alerts**: Gathers information from Google Scholar Alert emails into a consolidated report.
-- Sort by Alert Count: Sorts the collected literature information by the number of alerts.
-- Slack integration: As a unique feature not available in the original Go version, this script posts the sorted and aggregated alerts directly to Slack.
+- **Sort by Alert Count**: Sorts the collected literature information by the number of alerts.
+- **Slack integration**: As a unique feature not available in the original Go version, this script posts the sorted and aggregated alerts directly to Slack.
+
+<img width="411" alt="スクリーンショット 2024-01-27 19 15 19" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/670a111a-1b5f-4c7a-9a79-af9978a5f682">
 
 ## Prerequisites
 - Google Scholar Alerts must be set up to arrive in your Gmail.
