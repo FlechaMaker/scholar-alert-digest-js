@@ -120,7 +120,7 @@ function sendPaper(paper, threadTs) {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": paper.abstract.firstLine + paper.abstract.rest
+          "text": paper.abstract.firstLine + ' ' + paper.abstract.rest
         }
       },
     ]

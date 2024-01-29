@@ -194,7 +194,6 @@ function extractH3FollowingSiblingDiv2(html) {
 // only works on citation type
 function extractCitedPapers(html) {
   const regex = /(?:Cites: |引用: |1 件目の引用[\s\S]*?<\/span>[\s\S]*?<span[^>]*>)\u202a?([\s\S]+?)\u202c?&nbsp;&nbsp;<\/span>/gi;
-  // const regex = /<h3[^>]*?>[\s\S]*?<\/h3>[\s\S]*?<div[^>]*?>[\s\S]*?<\/div>[\s\S]*?<div[^>]*?>([\s\S]*?)<\/div>/gi
   return matchAll(regex, html);
 }
 
@@ -323,8 +322,12 @@ function separateFirstLine(text, N, lookahead) {
   return { firstLine, rest };
 }
 
+// Decode all HTML escapes in the input
 function decodeHtmlEntities(input) {
   return input.replace(/&#(\d+);/g, function (match, dec) {
     return String.fromCharCode(dec);
-  });
+  }).replace(/&quot;/g, '"') // Convert &quot; to "
+    .replace(/&amp;/g, '&')   // Convert &amp; to &
+    .replace(/&lt;/g, '<')    // Convert &lt; to <
+    .replace(/&gt;/g, '>');   // Convert &gt; to >
 }
