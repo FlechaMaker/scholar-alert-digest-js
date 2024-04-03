@@ -47,6 +47,8 @@ clasp create --type standalone --title "Scholar Alert Digest"
 clasp push
 ```
 
+or you can manually copy and paste JavaScript files (.js) to the Google Apps Script project.
+
 ### Setting up the script properties
 
 Set the following script properties in the Google Apps script configuration.
