@@ -25,7 +25,7 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
   - You have a Slack token and the ID of the Slack channel where the alerts are posted.
   - Make sure the Slack App has the chat:write permission.
   - To get the Slack token, you can check the official tutorial: https://api.slack.com/tutorials/tracks/getting-a-token
-- You should have nodejs installed on your local machine.
+- You should have nodejs installed on your local machine if you use clasp.
 
 ## Usage
 
