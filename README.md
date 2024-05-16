@@ -56,9 +56,9 @@ or you can manually copy and paste JavaScript files (.js) to the Google Apps Scr
 
 Set the following script properties in the Google Apps script configuration.
 
-- [GMAIL_LABEL] Gmail label for Google Scholar Alerts. (e.g. Google Scholar)
-- [SLACK_TOKEN] Slack token for authentication. (e.g. xoxb-00000...)
-- [SLACK_CONVERSATION_ID] ID of the Slack channel where the alerts are posted. (e.g. C000000000000)
+- **GMAIL_LABEL** Gmail label for Google Scholar Alerts. (e.g. Google Scholar)
+- **SLACK_TOKEN** Slack token for authentication. (e.g. xoxb-00000...)
+- **SLACK_CONVERSATION_ID** ID of the Slack channel where the alerts are posted. (e.g. C000000000000)
   - You can copy the conversation ID by clicking right button on the channel name and selecting "Copy > Copy link".
 
 ### Usage
