@@ -45,6 +45,9 @@ clasp create --type standalone --title "Scholar Alert Digest"
 
 # Upload the script to the Google Apps Script project
 clasp push
+
+# Open the Google Apps Script project to continue the following settings
+clasp open
 ```
 
 or you can manually copy and paste JavaScript files (.js) to the Google Apps Script project.
