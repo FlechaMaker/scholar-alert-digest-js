@@ -59,34 +59,12 @@ function sendHeader(aggregatedPapers, stats) {
   return sendSlackMessage(header);
 }
 
-function LinkAuthors(authorsStr) {
-  const separators = /[,&;]|and|\n/gi;
-  const removePattern = new RegExp(
-    "[\\d†\\*]" + // 数字、†、* を削除
-      "|(\\s[a-z])+(\\s*$)" + // 単一小文字による注釈を削除
-      // 名前以外の文字列・URLを削除
-      "|ORCID" +
-      "|View ORCID Profile" +
-      "|Author links open overlay panel" +
-      "|https?:\\/\\/\\S+",
-    "gi" // グローバル検索、大文字小文字を区別しない
-  );
-  const capitalize = (words) =>
-    words
-      .toLowerCase()
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-
-  const authors = authorsStr
-    .replace(separators, ",")
-    .split(",")
-    .map((author) => author.replace(removePattern, "").trim())
-    .filter((author) => author.length > 1)
-    .map((author) => `[${capitalize(author)}]`)
+function linkAuthors(authors, linkPrefix, linkSuffix) {
+  const authorsLink = authors
+    .map((author) => `${linkPrefix}${capitalize(author)}${linkSuffix}`)
     .join(", ");
 
-  return authors;
+  return authorsLink;
 }
 
 const scriptProperties = PropertiesService.getScriptProperties();
@@ -146,7 +124,7 @@ function composeScrapboxURL(paper) {
   }
 
   let titleURL = encodeURIComponent(paper.title);
-  let linkedAuthors = LinkAuthors(paper.author);
+  let linkedAuthors = linkAuthors(paper.authors, "[", "]");
   let scrapboxURL = `https://scrapbox.io/${scrapboxName}/${titleURL}?body=${encodeURIComponent(
     linkedAuthors +
       "\n" +
@@ -282,7 +260,7 @@ function sendPaper(paper, threadTs) {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: paper.author,
+          text: paper.authors.join(", "),
         },
       },
       {
