@@ -139,6 +139,45 @@ function transformedData(url, callback) {
   callback(transformedData);
 }
 
+function composeScrapboxURL(paper) {
+  const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
+  if (!scrapboxName) {
+    return null;
+  }
+
+  let titleURL = encodeURIComponent(paper.title);
+  let linkedAuthors = LinkAuthors(paper.author);
+  let scrapboxURL = `https://scrapbox.io/${scrapboxName}/${titleURL}?body=${encodeURIComponent(
+    linkedAuthors +
+      "\n" +
+      paper.url +
+      "\n\n[** Abstract]\n" +
+      paper.abstract.firstLine +
+      " " +
+      paper.abstract.rest +
+      "\n\n[** Memo]\n"
+  )}`;
+
+  // Shorten the body if the URL is too long. The maximum length of a URL is 3000 characters.
+  for (let i = 0; scrapboxURL.length > 3000; i++) {
+    const body =
+      linkedAuthors +
+      "\n" +
+      paper.url +
+      "\n\n[** Abstract]\n" +
+      paper.abstract.firstLine +
+      " " +
+      paper.abstract.rest +
+      "\n\n[** Memo]\n";
+    const body1 = body.slice(0, body.length - i);
+    scrapboxURL = `https://scrapbox.io/${scrapboxName}/${titleURL}?body=${encodeURIComponent(
+      body1
+    )}`;
+  }
+
+  return scrapboxURL;
+}
+
 function composeExtendedScrapboxURL(url, entry) {
   const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
   if (!scrapboxName) {
@@ -211,29 +250,12 @@ function sendPaper(paper, threadTs) {
     }
   });
 
-  let titleURL = encodeURIComponent(paper.title);
-  let linkedAuthors = LinkAuthors(paper.author);
   let abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
   let contentURL;
 
   const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
   if (scrapboxName) {
-    contentURL =
-      "https://scrapbox.io/" +
-      scriptProperties.getProperty("SCRAPBOX_NAME") +
-      "/" +
-      titleURL +
-      "?body=" +
-      encodeURIComponent(
-        linkedAuthors +
-          "\n" +
-          paper.url +
-          "\n\n[** Abstract]\n" +
-          paper.abstract.firstLine +
-          " " +
-          paper.abstract.rest +
-          "\n\n[** Memo]\n"
-      );
+    contentURL = composeScrapboxURL(paper);
   }
 
   // URLの変換を試みる
