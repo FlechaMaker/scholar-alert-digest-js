@@ -55,6 +55,48 @@ function sendHeader(aggregatedPapers, stats) {
   return sendSlackMessage(header);
 }
 
+const scriptProperties = PropertiesService.getScriptProperties();
+
+function transformedData(url, callback) {
+  const m = url.match(/acm\.org.*doi\/(?:[a-z]+\/)?((.*)\/(.*))$/);
+  if (m == null) {
+    callback(null);
+    return;
+  }
+  const doi = m[1];
+  const options = {
+    method: "post",
+    contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+    payload: `dois=${doi}&targetFile=custom-endNote&format=endNote`,
+    muteHttpExceptions: true,
+  };
+  const response = UrlFetchApp.fetch(
+    "https://dl.acm.org/action/exportCiteProcCitation",
+    options
+  );
+
+  let json;
+  try {
+    json = JSON.parse(response.getContentText());
+  } catch (e) {
+    console.error("Failed to parse JSON response:", e);
+    callback(null);
+    return;
+  }
+
+  if (!json || !json.items || !json.items[0] || !json.items[0][doi]) {
+    console.error("Invalid JSON structure:", json);
+    callback(null);
+    return;
+  }
+
+  const entry = json.items[0][doi];
+  const transformedData = {
+    abstract: entry.abstract,
+  };
+  callback(transformedData);
+}
+
 function sendPaper(paper, threadTs) {
   // Slack's header limit is 150 characters
   let title;
@@ -73,43 +115,53 @@ function sendPaper(paper, threadTs) {
     }
   });
 
-  let contents = [
-    {
+  let abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
+
+  // URLの変換を試みる
+  transformedData(paper.url, function (transformedData) {
+    if (transformedData) {
+      abstract = transformedData.abstract;
+    }
+
+    console.log(contentURL);
+
+    let contents = [
+      {
       "type": "header",
       "text": {
         "type": "plain_text",
         "text": title,
         "emoji": true
       }
-    },
-    {
+      },
+      {
       "type": "section",
       "text": {
         "type": "mrkdwn",
         "text": paper.author
       }
-    },
-    {
+      },
+      {
       "type": "section",
       "text": {
         "type": "mrkdwn",
         "text": `:link: ${paper.url}`
       }
-    },
-    {
+      },
+      {
       "type": "context",
       "elements": [
-        {
+          {
           "type": "mrkdwn",
           "text": `:bell: *${paper.frequency} alert${paper.frequency !== 1 ? 's' : ''}*`
-        },
-        {
+          },
+          {
           "type": "mrkdwn",
           "text": `${Object.keys(sources).map((type) => sources[type].length > 0 ? `*${capitalize(type)}*: ${sources[type].join(' | ')}` : `*${capitalize(type)}*`).join('\n')}`,
         }
       ]
-    },
-    {
+      },
+      {
       "type": "divider"
     }
   ]
@@ -120,13 +172,15 @@ function sendPaper(paper, threadTs) {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": paper.abstract.firstLine + ' ' + paper.abstract.rest
+          "text": abstract
         }
+          },
+        ],
       },
-    ]
-  }];
+    ];
 
-  return sendSlackMessage(contents, attachments, threadTs);
+    sendSlackMessage(contents, attachments, threadTs);
+  });
 }
 
 function sendSlackMessage(message, attachments = null, threadTs = null) {
