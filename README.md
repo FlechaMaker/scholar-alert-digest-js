@@ -25,7 +25,7 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
   - You have a Slack token and the ID of the Slack channel where the alerts are posted.
   - Make sure the Slack App has the chat:write permission.
   - To get the Slack token, you can check the official tutorial: https://api.slack.com/tutorials/tracks/getting-a-token
-- You should have nodejs installed on your local machine.
+- You should have nodejs installed on your local machine if you use clasp.
 
 ## Usage
 
@@ -45,6 +45,9 @@ clasp create --type standalone --title "Scholar Alert Digest"
 
 # Upload the script to the Google Apps Script project
 clasp push
+
+# Open the Google Apps Script project to continue the following settings
+clasp open
 ```
 
 or you can manually copy and paste JavaScript files (.js) to the Google Apps Script project.
@@ -53,9 +56,9 @@ or you can manually copy and paste JavaScript files (.js) to the Google Apps Scr
 
 Set the following script properties in the Google Apps script configuration.
 
-- [GMAIL_LABEL] Gmail label for Google Scholar Alerts. (e.g. Google Scholar)
-- [SLACK_TOKEN] Slack token for authentication. (e.g. xoxb-00000...)
-- [SLACK_CONVERSATION_ID] ID of the Slack channel where the alerts are posted. (e.g. C000000000000)
+- **GMAIL_LABEL** Gmail label for Google Scholar Alerts. (e.g. Google Scholar)
+- **SLACK_TOKEN** Slack token for authentication. (e.g. xoxb-00000...)
+- **SLACK_CONVERSATION_ID** ID of the Slack channel where the alerts are posted. (e.g. C000000000000)
   - You can copy the conversation ID by clicking right button on the channel name and selecting "Copy > Copy link".
 
 ### Usage

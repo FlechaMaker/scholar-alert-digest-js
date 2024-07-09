@@ -11,7 +11,7 @@ function sendToSlack(aggregatedPapers, stats) {
 
   let headerResponse = sendHeader(aggregatedPapers, stats);
   const sortedPapers = aggregatedPapers.getSortedPapers();
-  console.log(JSON.stringify(headerResponse))
+  console.log(JSON.stringify(headerResponse));
 
   sortedPapers.forEach((paper) => {
     let response = sendPaper(paper, headerResponse.ts);
@@ -26,30 +26,34 @@ function sendHeader(aggregatedPapers, stats) {
     {
       type: "header",
       text: {
-        "type": "plain_text",
-        "text": `Scholar Alert - ${currentDate.toDateString()}`,
-        "emoji": true
-      }
+        type: "plain_text",
+        text: `Scholar Alert - ${currentDate.toDateString()}`,
+        emoji: true,
+      },
     },
     {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": `${Object.keys(aggregatedPapers.papers).length} new paper${Object.keys(aggregatedPapers.papers).length !== 1 ? 's' : ''}`
-      }
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `${Object.keys(aggregatedPapers.papers).length} new paper${
+          Object.keys(aggregatedPapers.papers).length !== 1 ? "s" : ""
+        }`,
+      },
     },
     {
-      "type": "context",
-      "elements": [
+      type: "context",
+      elements: [
         {
-          "text": `${stats.messages} message${stats.messages !== 1 ? 's' : ''}, ${stats.errors} error${stats.errors !== 1 ? 's' : ''}`,
-          "type": "mrkdwn"
-        }
-      ]
+          text: `${stats.messages} message${stats.messages !== 1 ? "s" : ""}, ${
+            stats.errors
+          } error${stats.errors !== 1 ? "s" : ""}`,
+          type: "mrkdwn",
+        },
+      ],
     },
     {
-      "type": "divider"
-    }
+      type: "divider",
+    },
   ];
 
   return sendSlackMessage(header);
@@ -256,13 +260,13 @@ function sendPaper(paper, threadTs) {
 
 function sendSlackMessage(message, attachments = null, threadTs = null) {
   const scriptProperties = PropertiesService.getScriptProperties();
-  const token = scriptProperties.getProperty('SLACK_TOKEN');
-  const channel = scriptProperties.getProperty('SLACK_CONVERSATION_ID');
-  let url = 'https://slack.com/api/chat.postMessage';
+  const token = scriptProperties.getProperty("SLACK_TOKEN");
+  const channel = scriptProperties.getProperty("SLACK_CONVERSATION_ID");
+  let url = "https://slack.com/api/chat.postMessage";
 
   let payload = {
-    "channel": channel,
-    "blocks": message
+    channel: channel,
+    blocks: message,
   };
 
   if (attachments) {
@@ -274,18 +278,20 @@ function sendSlackMessage(message, attachments = null, threadTs = null) {
   }
 
   let options = {
-    "method": "post",
-    "contentType": "application/json; charset=utf-8",
-    "headers": {
-      "Authorization": "Bearer " + token
+    method: "post",
+    contentType: "application/json; charset=utf-8",
+    headers: {
+      Authorization: "Bearer " + token,
     },
-    "payload": JSON.stringify(payload)
+    payload: JSON.stringify(payload),
   };
 
   let response = UrlFetchApp.fetch(url, options);
   response = JSON.parse(response.getContentText());
   if (!response.ok) {
-    throw new Error(response.errors.join('; ') + '\n' + JSON.stringify(options));
+    throw new Error(
+      response.errors.join("; ") + "\n" + JSON.stringify(options)
+    );
   }
 
   return response;
@@ -293,5 +299,8 @@ function sendSlackMessage(message, attachments = null, threadTs = null) {
 
 // 文字列をキャピタライズする関数
 function capitalize(text) {
-    return text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return text
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
