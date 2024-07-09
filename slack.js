@@ -60,99 +60,137 @@ function sendHeader(aggregatedPapers, stats) {
 }
 
 function LinkAuthors(authorsStr) {
-     const separators = /[,&;]|and|\n/gi;
-     const removePattern = new RegExp(
-         "[\\d†\\*]" +  // 数字、†、* を削除
-         "|(\\s[a-z])+(\\s*$)" +  // 単一小文字による注釈を削除
-         // 名前以外の文字列・URLを削除
-         "|ORCID" +
-         "|View ORCID Profile" +
-         "|Author links open overlay panel" +
-         "|https?:\\/\\/\\S+",
-         "gi"  // グローバル検索、大文字小文字を区別しない
-     );
-     const capitalize = words => words.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
- 
-     const authors = authorsStr.replace(separators, ",")
-         .split(",")
-         .map(author => author.replace(removePattern, "").trim())
-         .filter(author => author.length > 1)
-         .map(author => `[${capitalize(author)}]`)
-         .join(", ");
- 
-     return authors;
- }
- 
- const scriptProperties = PropertiesService.getScriptProperties();
+  const separators = /[,&;]|and|\n/gi;
+  const removePattern = new RegExp(
+    "[\\d†\\*]" + // 数字、†、* を削除
+      "|(\\s[a-z])+(\\s*$)" + // 単一小文字による注釈を削除
+      // 名前以外の文字列・URLを削除
+      "|ORCID" +
+      "|View ORCID Profile" +
+      "|Author links open overlay panel" +
+      "|https?:\\/\\/\\S+",
+    "gi" // グローバル検索、大文字小文字を区別しない
+  );
+  const capitalize = (words) =>
+    words
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
+  const authors = authorsStr
+    .replace(separators, ",")
+    .split(",")
+    .map((author) => author.replace(removePattern, "").trim())
+    .filter((author) => author.length > 1)
+    .map((author) => `[${capitalize(author)}]`)
+    .join(", ");
+
+  return authors;
+}
+
+const scriptProperties = PropertiesService.getScriptProperties();
 
 function transformedData(url, callback) {
-    const m = url.match(/acm\.org.*doi\/(?:[a-z]+\/)?((.*)\/(.*))$/);
-    if (m == null) {
-        callback(null);
-        return;
-    }
-    const doi = m[1];
-    const options = {
-        "method": "post",
-        "contentType": "application/x-www-form-urlencoded; charset=UTF-8",
-        "payload": `dois=${doi}&targetFile=custom-endNote&format=endNote`,
-        "muteHttpExceptions": true
-    };
-    const response = UrlFetchApp.fetch("https://dl.acm.org/action/exportCiteProcCitation", options);
-    
-    let json;
-    try {
-        json = JSON.parse(response.getContentText());
-    } catch (e) {
-        console.error("Failed to parse JSON response:", e);
-        callback(null);
-        return;
-    }
+  const m = url.match(/acm\.org.*doi\/(?:[a-z]+\/)?((.*)\/(.*))$/);
+  if (m == null) {
+    callback(null);
+    return;
+  }
+  const doi = m[1];
+  const options = {
+    "method": "post",
+    "contentType": "application/x-www-form-urlencoded; charset=UTF-8",
+    "payload": `dois=${doi}&targetFile=custom-endNote&format=endNote`,
+    "muteHttpExceptions": true,
+  };
+  const response = UrlFetchApp.fetch(
+    "https://dl.acm.org/action/exportCiteProcCitation",
+    options
+  );
 
-    if (!json || !json.items || !json.items[0] || !json.items[0][doi]) {
-        console.error("Invalid JSON structure:", json);
-        callback(null);
-        return;
-    }
+  let json;
+  try {
+    json = JSON.parse(response.getContentText());
+  } catch (e) {
+    console.error("Failed to parse JSON response:", e);
+    callback(null);
+    return;
+  }
 
-    const entry = json.items[0][doi];
-    const authors = entry.author;
-    const title = `${authors[0].given} ${authors[0].family}: ${entry.title}`;
-    var body = [];
-    body.push('[[タイトル]]');
-    body.push(` [${entry.title} ${url}]`);
-    body.push('[[著者]]');
-    for (const author of authors) {
-        body.push(` [${author.given} ${author.family}]`);
-    }
-    body.push('[[ソース]]');
-    body.push(' ' + entry['container-title']);
-    body.push('[[年]]');
-    body.push(' ' + entry.issued['date-parts']);
-    body.push('[[ページ]]');
-    body.push(' ' + entry.page);
-    body.push('[[概要]]');
-    body.push(' ' + entry.abstract);
-    body.push('[[DOI]]');
-    body.push(' ' + entry.DOI);
-    body.push('[[URL]]');
-    body.push(' ' + entry.URL);
-    body.push('[[キーワード]]');
-    body.push(' ' + entry.keyword);
-    body.push('[[出版社]]');
-    body.push(' ' + entry.publisher);
-    body.push('[[本文]]');
-    body.push(' ' + ` [${entry.title}_EN]`);
-    body.push(' ' + ` [${entry.title}_JP]`);
-    body.push('[[コメント]]');
-    // const title0 = title.replace(/\?/g, '%' + '3f').replace(/&/g, '%' + '26');
-    const body0 = body.join('\n')
-    const transformedData = {
-      abstract:entry.abstract,
-      scrapboxURL:`https://scrapbox.io/${scriptProperties.getProperty('SCRAPBOX_NAME')}/${encodeURIComponent(title)}?body=${encodeURIComponent(body0)}`
-    };
-    console.log(transformedData.scrapboxURL)
-    callback(transformedData);
+  if (!json || !json.items || !json.items[0] || !json.items[0][doi]) {
+    console.error("Invalid JSON structure:", json);
+    callback(null);
+    return;
+  }
+
+  const entry = json.items[0][doi];
+  const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
+  let contentURL;
+  if (scrapboxName) {
+    contentURL = composeExtendedScrapboxURL(url, entry);
+  }
+
+  const transformedData = {
+    abstract: entry.abstract,
+    contentURL: contentURL,
+  };
+  console.log(transformedData.contentURL);
+  callback(transformedData);
+}
+
+function composeExtendedScrapboxURL(url, entry) {
+  const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
+  if (!scrapboxName) {
+    return null;
+  }
+
+  const authors = entry.author;
+  const title = `${authors[0].given} ${authors[0].family}: ${entry.title}`;
+  var body = [];
+  body.push("[[タイトル]]");
+  body.push(` [${entry.title} ${url}]`);
+  body.push("[[著者]]");
+  for (const author of authors) {
+    body.push(` [${author.given} ${author.family}]`);
+  }
+  body.push("[[ソース]]");
+  body.push(" " + entry["container-title"]);
+  body.push("[[年]]");
+  body.push(" " + entry.issued["date-parts"]);
+  body.push("[[ページ]]");
+  body.push(" " + entry.page);
+  body.push("[[概要]]");
+  body.push(" " + entry.abstract);
+  body.push("[[DOI]]");
+  body.push(" " + entry.DOI);
+  body.push("[[URL]]");
+  body.push(" " + entry.URL);
+  body.push("[[キーワード]]");
+  body.push(" " + entry.keyword);
+  body.push("[[出版社]]");
+  body.push(" " + entry.publisher);
+  body.push("[[本文]]");
+  body.push(" " + ` [${entry.title}_EN]`);
+  body.push(" " + ` [${entry.title}_JP]`);
+  body.push("[[コメント]]");
+
+  // const title0 = title.replace(/\?/g, '%' + '3f').replace(/&/g, '%' + '26');
+  const body0 = body.join("\n");
+  let scrapboxURL = `https://scrapbox.io/${scrapboxName}/${encodeURIComponent(
+    title
+  )}?body=${encodeURIComponent(body0)}`;
+
+  // Shorten the body if the URL is too long. The maximum length of a URL is 3000 characters.
+  while (scrapboxURL.length > 3000) {
+    body.pop(); // remove last element to shorten the body
+    const body1 = body.join("\n");
+    scrapboxURL = `https://scrapbox.io/${scrapboxName}/${encodeURIComponent(
+      title
+    )}?body=${encodeURIComponent(body1)}`;
+  }
+
+  return scrapboxURL;
 }
 
 function sendPaper(paper, threadTs) {
@@ -175,84 +213,121 @@ function sendPaper(paper, threadTs) {
 
   let titleURL = encodeURIComponent(paper.title);
   let linkedAuthors = LinkAuthors(paper.author);
-  let abstract = paper.abstract.firstLine + ' ' + paper.abstract.rest;
-  let contentURL = "https://scrapbox.io/" + scriptProperties.getProperty('SCRAPBOX_NAME') + "/" + titleURL + "?body=" + encodeURIComponent(linkedAuthors + "\n" + paper.url + "\n\n[** Abstract]\n" + paper.abstract.firstLine + ' ' + paper.abstract.rest + "\n\n[** Memo]\n");
+  let abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
+  let contentURL;
+
+  const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
+  if (scrapboxName) {
+    contentURL =
+      "https://scrapbox.io/" +
+      scriptProperties.getProperty("SCRAPBOX_NAME") +
+      "/" +
+      titleURL +
+      "?body=" +
+      encodeURIComponent(
+        linkedAuthors +
+          "\n" +
+          paper.url +
+          "\n\n[** Abstract]\n" +
+          paper.abstract.firstLine +
+          " " +
+          paper.abstract.rest +
+          "\n\n[** Memo]\n"
+      );
+  }
 
   // URLの変換を試みる
-  transformedData(paper.url, function(transformedData) {
-    if (transformedData) {
-      contentURL = transformedData.scrapboxURL;
+  transformedData(paper.url, function (transformedData) {
+    if (transformedData?.contentURL) {
+      contentURL = transformedData.contentURL;
+    }
+    if (transformedData?.abstract) {
       abstract = transformedData.abstract;
     }
 
-    console.log(contentURL)
+    console.log(contentURL);
 
     let contents = [
       {
-        "type": "header",
-        "text": {
-          "type": "plain_text",
-          "text": title,
-          "emoji": true
-        }
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: title,
+          emoji: true,
+        },
       },
       {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": paper.author
-        }
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: paper.author,
+        },
       },
       {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `:link: ${paper.url}`
-        }
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `:link: ${paper.url}`,
+        },
       },
       {
-        "type": "context",
-        "elements": [
+        type: "context",
+        elements: [
           {
-            "type": "mrkdwn",
-            "text": `:bell: *${paper.frequency} alert${paper.frequency !== 1 ? 's' : ''}*`
+            type: "mrkdwn",
+            text: `:bell: *${paper.frequency} alert${
+              paper.frequency !== 1 ? "s" : ""
+            }*`,
           },
           {
-            "type": "mrkdwn",
-            "text": `${Object.keys(sources).map((type) => sources[type].length > 0 ? `*${capitalize(type)}*: ${sources[type].join(' | ')}` : `*${capitalize(type)}*`).join('\n')}`,
-          }
-        ]
+            type: "mrkdwn",
+            text: `${Object.keys(sources)
+              .map((type) =>
+                sources[type].length > 0
+                  ? `*${capitalize(type)}*: ${sources[type].join(" | ")}`
+                  : `*${capitalize(type)}*`
+              )
+              .join("\n")}`,
+          },
+        ],
       },
-      {
-        "type": "actions",
-        "elements": [
-          {
-            "type": "button",
-            "text": {
-              "type": "plain_text",
-              "text": ":inbox_tray: Save to Scrapbox",
-              "emoji": true
-            },
-            "url": contentURL
-          }
-        ]
-      },
-      {
-        "type": "divider"
-      }
     ];
 
-    let attachments = [{
-      "blocks": [
-        {
-          "type": "section",
-          "text": {
-            "type": "mrkdwn",
-            "text": abstract
-          }
-        },
-      ]
-    }];
+    // Save to Button
+    if (scrapboxName && contentURL) {
+      contents.push({
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: ":inbox_tray: Save to Scrapbox",
+              emoji: true,
+            },
+            url: contentURL,
+          },
+        ],
+      });
+    }
+
+    contents.push({
+      type: "divider",
+    });
+
+    let attachments = [
+      {
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: abstract,
+            },
+          },
+        ],
+      },
+    ];
 
     sendSlackMessage(contents, attachments, threadTs);
   });
