@@ -1,9 +1,10 @@
 // Paper is a map key, thus aggregation takes into account all its fields.
 class Paper {
-  constructor(title, url, authors = [], abstract, refs = [], freq = 1) {
+  constructor(title, url, authors = [], year, abstract, refs = [], freq = 1) {
     this.title = title;
     this.url = url;
     this.authors = authors;
+    this.year = year;
     this.abstract = abstract;
     this.refs = refs;
     this.frequency = freq;
@@ -123,7 +124,7 @@ function extractPapersFromMessage(message, includeAuthors) {
     citedPapers = extractCitedPapers(body).map((s) => decodeHtmlEntities(s));
   }
 
-  const authorsStrs = extractH3FollowingSiblingDiv1(body).map((s) =>
+  const publicationStrs = extractH3FollowingSiblingDiv1(body).map((s) =>
     decodeHtmlEntities(s)
   );
   const abstracts = extractH3FollowingSiblingDiv2(body).map((s) =>
@@ -136,8 +137,9 @@ function extractPapersFromMessage(message, includeAuthors) {
     const title = titles[i].trim();
     const abstract = abstracts[i].trim().replace(/<br\s*\/?>/g, "");
     if (includeAuthors) {
-      authors = extractAuthorsFromElement(authorsStrs[i]);
+      authors = extractAuthorsFromElement(publicationStrs[i]);
     }
+    const year = extractYearFromElement(publicationStrs[i]);
 
     let url;
     try {
@@ -170,6 +172,7 @@ function extractPapersFromMessage(message, includeAuthors) {
         title,
         url,
         authors,
+        year,
         abstractInfo,
         [new Ref(message.getId(), subject, currentSourceInfo)],
         1
@@ -257,6 +260,11 @@ function extractAuthorsFromElement(publication) {
     .map((author) => capitalize(author));
 
   return authors;
+}
+
+function extractYearFromElement(publication) {
+  const yearMatch = publication.match(/(\d{4})$/);
+  return yearMatch ? parseInt(yearMatch[1]) : null;
 }
 
 var scholarURLPrefix = new RegExp(

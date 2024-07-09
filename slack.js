@@ -104,14 +104,21 @@ function transformedData(url, callback) {
 
   const entry = json.items[0][doi];
   const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
-  let contentURL;
+  let scrapboxURL;
   if (scrapboxName) {
-    contentURL = composeExtendedScrapboxURL(url, entry);
+    scrapboxURL = composeExtendedScrapboxURLFromACMAPI(url, entry);
+  }
+
+  const obsidianVault = scriptProperties.getProperty("OBSIDIAN_VAULT");
+  let obsidianURL;
+  if (obsidianVault) {
+    obsidianURL = composeExtendedObsidianURLFromACMAPI(url, entry);
   }
 
   const transformedData = {
     abstract: entry.abstract,
-    contentURL: contentURL,
+    scrapboxURL: scrapboxURL,
+    obsidianURL: obsidianURL,
   };
   console.log(transformedData.contentURL);
   callback(transformedData);
@@ -156,7 +163,7 @@ function composeScrapboxURL(paper) {
   return scrapboxURL;
 }
 
-function composeExtendedScrapboxURL(url, entry) {
+function composeExtendedScrapboxURLFromACMAPI(url, entry) {
   const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
   if (!scrapboxName) {
     return null;
@@ -210,6 +217,94 @@ function composeExtendedScrapboxURL(url, entry) {
   return scrapboxURL;
 }
 
+function composeObsidianURL(paper) {
+  const vault = scriptProperties.getProperty("OBSIDIAN_VAULT");
+  const folder = scriptProperties.getProperty("OBSIDIAN_FOLDER_PATH");
+  if (!vault || !folder) {
+    return null;
+  }
+
+  const authorsFamilyNames = paper.authors.map((author) =>
+    author.split(" ").at(-1)
+  );
+  const authorsListWithoutLast = authorsFamilyNames.slice(0, -1);
+  let authorsList;
+  if (paper.authors.length > 1) {
+    authorsList =
+      authorsListWithoutLast.join(", ") + " & " + authorsFamilyNames.slice(-1);
+  } else {
+    authorsList = authorsFamilyNames[0];
+  }
+  const authoryear = `${authorsList} ${paper.year}`;
+  const file = `${folder}/${authoryear}`;
+  const linkedAuthors = linkAuthors(paper.authors, "[[", "]]");
+  const abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
+  const body = `${linkedAuthors}. ${paper.year}. ${paper.title}. [${paper.url}](${paper.url})
+
+## Abstract
+${abstract}
+`;
+
+  const obsidianURL = `obsidian://new?vault=${encodeURIComponent(
+    vault
+  )}&file=${encodeURIComponent(file)}&content=${encodeURIComponent(body)}`;
+
+  return obsidianURL;
+}
+
+function composeExtendedObsidianURLFromACMAPI(url, entry) {
+  const vault = scriptProperties.getProperty("OBSIDIAN_VAULT");
+  const folder = scriptProperties.getProperty("OBSIDIAN_FOLDER_PATH");
+  if (!vault || !folder) {
+    return null;
+  }
+
+  const authors = entry.author;
+  const authorsFamilyNames = authors.map((author) => author.family);
+  const authorsListWithoutLast = authorsFamilyNames.slice(0, -1);
+  let authorsList;
+  if (authors.length > 1) {
+    authorsList =
+      authorsListWithoutLast.join(", ") + " & " + authorsFamilyNames.slice(-1);
+  } else {
+    authorsList = authorsFamilyNames[0];
+  }
+  const authoryear = `${authorsList} ${entry.issued["date-parts"][0][0]}`;
+  const file = `${folder}/${authoryear}`;
+  const linkedAuthors = authors.map(
+    (author) => `[[${author.given} ${author.family}]]`
+  );
+  const linkedAuthorsWithoutLast = linkedAuthors.slice(0, -1);
+  let linkedAuthorsList;
+  if (authors.length > 1) {
+    linkedAuthorsList =
+      linkedAuthorsWithoutLast.join(", ") + " & " + linkedAuthors.slice(-1);
+  } else {
+    linkedAuthorsList = linkedAuthors[0];
+  }
+  const body = `${linkedAuthorsList}. ${entry.issued["date-parts"][0][0]}. ${
+    entry.title
+  }. ${entry["container-title"]}. ${entry.page}. [DOI:${entry.DOI}](${
+    entry.URL
+  }).
+
+## Abstract
+${entry.abstract}
+
+## Keywords
+${entry.keyword
+  .split(", ")
+  .map((keyword) => `#${keyword.replace(/\s/g, "_")}`)
+  .join(" ")}
+`;
+
+  const obsidianURL = `obsidian://new?vault=${encodeURIComponent(
+    vault
+  )}&file=${encodeURIComponent(file)}&content=${encodeURIComponent(body)}`;
+
+  return obsidianURL;
+}
+
 function sendPaper(paper, threadTs) {
   // Slack's header limit is 150 characters
   let title;
@@ -229,23 +324,30 @@ function sendPaper(paper, threadTs) {
   });
 
   let abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
-  let contentURL;
 
+  let scrapboxURL;
   const scrapboxName = scriptProperties.getProperty("SCRAPBOX_NAME");
   if (scrapboxName) {
-    contentURL = composeScrapboxURL(paper);
+    scrapboxURL = composeScrapboxURL(paper);
+  }
+
+  let obsidianURL;
+  const obsidianVault = scriptProperties.getProperty("OBSIDIAN_VAULT");
+  if (obsidianVault) {
+    obsidianURL = composeObsidianURL(paper);
   }
 
   // URLの変換を試みる
   transformedData(paper.url, function (transformedData) {
-    if (transformedData?.contentURL) {
-      contentURL = transformedData.contentURL;
+    if (transformedData?.scrapboxURL) {
+      scrapboxURL = transformedData.scrapboxURL;
+    }
+    if (transformedData?.obsidianURL) {
+      obsidianURL = transformedData.obsidianURL;
     }
     if (transformedData?.abstract) {
       abstract = transformedData.abstract;
     }
-
-    console.log(contentURL);
 
     let contents = [
       {
@@ -293,22 +395,37 @@ function sendPaper(paper, threadTs) {
       },
     ];
 
-    // Save to Button
-    if (scrapboxName && contentURL) {
-      contents.push({
+    // Save to Buttons
+    if ((scrapboxName && scrapboxURL) || (obsidianVault && obsidianURL)) {
+      let actions = {
         type: "actions",
-        elements: [
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: ":inbox_tray: Save to Scrapbox",
-              emoji: true,
-            },
-            url: contentURL,
+        elements: [],
+      };
+      if (scrapboxName && scrapboxURL) {
+        actions.elements.push({
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: ":inbox_tray: Save to Scrapbox",
+            emoji: true,
           },
-        ],
-      });
+          url: scrapboxURL,
+        });
+      }
+
+      if (obsidianVault && obsidianURL) {
+        actions.elements.push({
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: ":inbox_tray: Save to Obsidian",
+            emoji: true,
+          },
+          url: obsidianURL,
+        });
+      }
+
+      contents.push(actions);
     }
 
     contents.push({
