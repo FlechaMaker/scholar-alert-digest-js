@@ -218,7 +218,7 @@ function composeExtendedScrapboxURLFromACMAPI(url, entry) {
 function composeObsidianURL(paper) {
   const vault = scriptProperties.getProperty("OBSIDIAN_VAULT");
   const folder = scriptProperties.getProperty("OBSIDIAN_FOLDER_PATH");
-  if (!vault || !folder) {
+  if (!vault) {
     return null;
   }
 
@@ -234,7 +234,7 @@ function composeObsidianURL(paper) {
     authorsList = authorsFamilyNames[0];
   }
   const authoryear = `${authorsList} ${paper.year}`;
-  const file = `${folder}/${authoryear}`;
+  const file = folder ? `${folder}/${authoryear}` : authoryear;
   const linkedAuthors = linkAuthors(paper.authors, "[[", "]]");
   const abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
   const body = `${linkedAuthors}. ${paper.year}. ${paper.title}. [${
@@ -255,7 +255,7 @@ ${abstract}
 function composeExtendedObsidianURLFromACMAPI(url, entry) {
   const vault = scriptProperties.getProperty("OBSIDIAN_VAULT");
   const folder = scriptProperties.getProperty("OBSIDIAN_FOLDER_PATH");
-  if (!vault || !folder) {
+  if (!vault) {
     return null;
   }
 
@@ -270,7 +270,7 @@ function composeExtendedObsidianURLFromACMAPI(url, entry) {
     authorsList = authorsFamilyNames[0];
   }
   const authoryear = `${authorsList} ${entry.issued["date-parts"][0][0]}`;
-  const file = `${folder}/${authoryear}`;
+  const file = folder ? `${folder}/${authoryear}` : authoryear;
   const linkedAuthors = authors.map(
     (author) => `[[${author.given} ${author.family}]]`
   );
