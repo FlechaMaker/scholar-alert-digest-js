@@ -14,8 +14,10 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
 - **Sort by Alert Count**: Sorts the collected literature information by the number of alerts.
 - **Slack integration**: This script can post the sorted and aggregated alerts to Slack.
 - **_Save to_ buttons**: Save paper data to your notebook applications by a click.
+- **Proxy**: Append proxy URL to access papers through your organization.
 
-<img width="469" alt="screenshot" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/9cb85220-d6af-4b18-9d23-4f578e182fd2">
+<img width="400" alt="screenshot" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/edc1df44-7bc9-45bf-a539-bfc8cdbe11ca">
+
 
 ## Prerequisites
 
