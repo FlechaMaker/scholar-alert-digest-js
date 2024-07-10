@@ -18,7 +18,6 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
 
 <img width="400" alt="screenshot" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/edc1df44-7bc9-45bf-a539-bfc8cdbe11ca">
 
-
 ## Prerequisites
 
 - Google Scholar Alerts must be set up to arrive in your Gmail, and this script (Google Apps Script) should be run by the same Google Account.
@@ -59,10 +58,38 @@ or you can manually copy and paste JavaScript files (.js) to the Google Apps Scr
 
 Set the following script properties in the Google Apps script configuration.
 
-- **GMAIL_LABEL** Gmail label for Google Scholar Alerts. (e.g. Google Scholar)
-- **SLACK_TOKEN** Slack token for authentication. (e.g. xoxb-00000...)
-- **SLACK_CONVERSATION_ID** ID of the Slack channel where the alerts are posted. (e.g. C000000000000)
-  - You can copy the conversation ID by clicking right button on the channel name and selecting "Copy > Copy link".
+#### Gmail
+
+| Property Name | Required? | Description                            | Example        |
+| ------------- | --------- | -------------------------------------- | -------------- |
+| `GMAIL_LABEL` | Yes       | Gmail label for Google Scholar Alerts. | Google Scholar |
+
+#### Slack
+
+| Property Name           | Required? | Description                                          | Example       |
+| ----------------------- | --------- | ---------------------------------------------------- | ------------- |
+| `SLACK_TOKEN`           | Yes       | Slack token for authentication.                      | xoxb-00000... |
+| `SLACK_CONVERSATION_ID` | Yes       | ID of the Slack channel where the alerts are posted. | C000000000000 |
+
+#### Proxy
+
+| Property Name          | Required? | Description                                           | Example                                |
+| ---------------------- | --------- | ----------------------------------------------------- | -------------------------------------- |
+| `PROXY_URL`            | No        | Proxy URL to access papers through your organization. | https://utokyo.idm.oclc.org/login?url= |
+| `PROXY_IGNORE_DOMAINS` | No        | Space-separated list of domains to ignore the proxy.  | arxiv.org dl.acm.org                   |
+
+#### Obsidian
+
+| Property Name          | Required? | Description                                                                              | Example  |
+| ---------------------- | --------- | ---------------------------------------------------------------------------------------- | -------- |
+| `OBSIDIAN_VAULT`       | No        | Obsidian vault name to save the paper note.                                              | My vault |
+| `OBSIDIAN_FOLDER_PATH` | No        | Obsidian folder path to save the paper note. Set "/" if you save note in root directory. | Articles |
+
+#### Scrapbox
+
+| Property Name   | Required? | Description                                   | Example    |
+| --------------- | --------- | --------------------------------------------- | ---------- |
+| `SCRAPBOX_NAME` | No        | Scrapbox project name to save the paper note. | My project |
 
 ### Usage
 
