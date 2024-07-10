@@ -14,8 +14,7 @@ function sendToSlack(aggregatedPapers, stats) {
   console.log(JSON.stringify(headerResponse));
 
   sortedPapers.forEach((paper) => {
-    let response = sendPaper(paper, headerResponse.ts);
-    console.log(JSON.stringify(response));
+    sendPaper(paper, headerResponse.ts);
     Utilities.sleep(1000);
   });
 }
@@ -120,7 +119,6 @@ function transformedData(url, callback) {
     scrapboxURL: scrapboxURL,
     obsidianURL: obsidianURL,
   };
-  console.log(transformedData.contentURL);
   callback(transformedData);
 }
 
@@ -135,7 +133,7 @@ function composeScrapboxURL(paper) {
   let scrapboxURL = `https://scrapbox.io/${scrapboxName}/${titleURL}?body=${encodeURIComponent(
     linkedAuthors +
       "\n" +
-      paper.url +
+      addProxyURL(paper.url) +
       "\n\n[** Abstract]\n" +
       paper.abstract.firstLine +
       " " +
@@ -148,7 +146,7 @@ function composeScrapboxURL(paper) {
     const body =
       linkedAuthors +
       "\n" +
-      paper.url +
+      addProxyURL(paper.url) +
       "\n\n[** Abstract]\n" +
       paper.abstract.firstLine +
       " " +
@@ -173,7 +171,7 @@ function composeExtendedScrapboxURLFromACMAPI(url, entry) {
   const title = `${authors[0].given} ${authors[0].family}: ${entry.title}`;
   var body = [];
   body.push("[[タイトル]]");
-  body.push(` [${entry.title} ${url}]`);
+  body.push(` [${entry.title} ${addProxyURL(url)}]`);
   body.push("[[著者]]");
   for (const author of authors) {
     body.push(` [${author.given} ${author.family}]`);
@@ -189,7 +187,7 @@ function composeExtendedScrapboxURLFromACMAPI(url, entry) {
   body.push("[[DOI]]");
   body.push(" " + entry.DOI);
   body.push("[[URL]]");
-  body.push(" " + entry.URL);
+  body.push(" " + addProxyURL(entry.URL));
   body.push("[[キーワード]]");
   body.push(" " + entry.keyword);
   body.push("[[出版社]]");
@@ -239,7 +237,9 @@ function composeObsidianURL(paper) {
   const file = `${folder}/${authoryear}`;
   const linkedAuthors = linkAuthors(paper.authors, "[[", "]]");
   const abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
-  const body = `${linkedAuthors}. ${paper.year}. ${paper.title}. [${paper.url}](${paper.url})
+  const body = `${linkedAuthors}. ${paper.year}. ${paper.title}. [${
+    paper.url
+  }](${addProxyURL(paper.url)})
 
 ## Abstract
 ${abstract}
@@ -284,9 +284,9 @@ function composeExtendedObsidianURLFromACMAPI(url, entry) {
   }
   const body = `${linkedAuthorsList}. ${entry.issued["date-parts"][0][0]}. ${
     entry.title
-  }. ${entry["container-title"]}. ${entry.page}. [DOI:${entry.DOI}](${
-    entry.URL
-  }).
+  }. ${entry["container-title"]}. ${entry.page}. [DOI:${
+    entry.DOI
+  }](${addProxyURL(entry.URL)}).
 
 ## Abstract
 ${entry.abstract}
@@ -369,7 +369,7 @@ function sendPaper(paper, threadTs) {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `:link: ${paper.url}`,
+          text: `:link: <${addProxyURL(paper.url)}|${paper.url}>`,
         },
       },
       {
@@ -446,7 +446,10 @@ function sendPaper(paper, threadTs) {
       },
     ];
 
-    sendSlackMessage(contents, attachments, threadTs);
+    const response = sendSlackMessage(contents, attachments, threadTs);
+    console.log(JSON.stringify(response));
+
+    return response;
   });
 }
 
@@ -487,6 +490,28 @@ function sendSlackMessage(message, attachments = null, threadTs = null) {
   }
 
   return response;
+}
+
+function addProxyURL(url) {
+  const proxyURL = scriptProperties.getProperty("PROXY_URL");
+  const proxyIgnoreDomains = scriptProperties.getProperty(
+    "PROXY_IGNORE_DOMAINS"
+  );
+  if (!proxyURL) {
+    return url;
+  }
+
+  const regex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/;
+  const match = url.match(regex);
+  const hostname = match && match[1];
+  if (
+    typeof proxyIgnoreDomains === "string" &&
+    proxyIgnoreDomains.split(" ").includes(hostname)
+  ) {
+    return url;
+  }
+
+  return `${proxyURL}${url}`;
 }
 
 // 文字列をキャピタライズする関数
