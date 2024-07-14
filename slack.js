@@ -354,7 +354,7 @@ function sendPaper(paper, threadTs) {
         type: "header",
         text: {
           type: "plain_text",
-          text: title,
+          text: title || "No title",
           emoji: true,
         },
       },
@@ -362,7 +362,7 @@ function sendPaper(paper, threadTs) {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: paper.authors.join(", "),
+          text: `${paper.authors.join(", ")}` || "No authors",
         },
       },
       {
@@ -383,13 +383,14 @@ function sendPaper(paper, threadTs) {
           },
           {
             type: "mrkdwn",
-            text: `${Object.keys(sources)
-              .map((type) =>
-                sources[type].length > 0
-                  ? `*${capitalize(type)}*: ${sources[type].join(" | ")}`
-                  : `*${capitalize(type)}*`
-              )
-              .join("\n")}`,
+            text:
+              `${Object.keys(sources)
+                .map((type) =>
+                  sources[type].length > 0
+                    ? `*${capitalize(type)}*: ${sources[type].join(" | ")}`
+                    : `*${capitalize(type)}*`
+                )
+                .join("\n")}` || "No sources",
           },
         ],
       },
@@ -439,7 +440,7 @@ function sendPaper(paper, threadTs) {
             type: "section",
             text: {
               type: "mrkdwn",
-              text: abstract,
+              text: abstract || "No abstract",
             },
           },
         ],
@@ -494,9 +495,7 @@ function sendSlackMessage(message, attachments = null, threadTs = null) {
 
 function addProxyURL(url) {
   const proxyURL = scriptProperties.getProperty("PROXY_URL");
-  const proxyIgnoreDomains = scriptProperties.getProperty(
-    "PROXY_IGNORE_DOMAINS"
-  );
+  const proxyDomains = scriptProperties.getProperty("PROXY_DOMAINS");
   if (!proxyURL) {
     return url;
   }
@@ -505,13 +504,13 @@ function addProxyURL(url) {
   const match = url.match(regex);
   const hostname = match && match[1];
   if (
-    typeof proxyIgnoreDomains === "string" &&
-    proxyIgnoreDomains.split(" ").includes(hostname)
+    typeof proxyDomains === "string" &&
+    proxyDomains.split(" ").includes(hostname)
   ) {
-    return url;
+    return `${proxyURL}${url}`;
   }
 
-  return `${proxyURL}${url}`;
+  return url;
 }
 
 // 文字列をキャピタライズする関数
