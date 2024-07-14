@@ -230,9 +230,7 @@ function matchAll(regex, s) {
 }
 
 function extractAuthorsFromElement(publication) {
-  let authorsStr = publication
-    .substring(0, publication.indexOf("-"))
-    .trimRight();
+  let authorsStr = publication.split("-")[0].trimRight();
 
   const separators = /[,&;]|and|\n/gi;
   const removePattern = new RegExp(
