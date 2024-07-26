@@ -293,7 +293,7 @@ ${entry.abstract}
 
 ## Keywords
 ${entry.keyword
-  .split(", ")
+  ?.split(", ")
   .map((keyword) => `#${keyword.replace(/\s/g, "_")}`)
   .join(" ")}
 `;
