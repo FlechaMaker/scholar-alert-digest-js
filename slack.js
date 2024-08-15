@@ -236,7 +236,7 @@ function composeObsidianURL(paper) {
   const authoryear = `${authorsList} ${paper.year}`;
   const file = folder ? `${folder}/${authoryear}` : authoryear;
   const linkedAuthors = linkAuthors(paper.authors, "[[", "]]");
-  const abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
+  let abstract = paper.abstract.firstLine + " " + paper.abstract.rest;
   const body = `${linkedAuthors}. ${paper.year}. ${paper.title}. [${
     paper.url
   }](${addProxyURL(paper.url)})
@@ -245,9 +245,25 @@ function composeObsidianURL(paper) {
 ${abstract}
 `;
 
-  const obsidianURL = `obsidian://new?vault=${encodeURIComponent(
+  let obsidianURL = `obsidian://new?vault=${encodeURIComponent(
     vault
   )}&file=${encodeURIComponent(file)}&content=${encodeURIComponent(body)}`;
+
+  // Shorten the body if the URL is too long. The maximum length of a URL is 3000 characters.
+  while (obsidianURL.length > 2950) {
+    abstract = abstract.slice(0, abstract.length - 10);
+
+    const body1 = `${linkedAuthors}. ${paper.year}. ${paper.title}. [${
+      paper.url
+    }](${addProxyURL(paper.url)})
+
+## Abstract
+${abstract}`;
+
+    obsidianURL = `obsidian://new?vault=${encodeURIComponent(
+      vault
+    )}&file=${encodeURIComponent(file)}&content=${encodeURIComponent(body1)}`;
+  }
 
   return obsidianURL;
 }
@@ -282,6 +298,7 @@ function composeExtendedObsidianURLFromACMAPI(url, entry) {
   } else {
     linkedAuthorsList = linkedAuthors[0];
   }
+  let abstract = entry.abstract;
   const body = `${linkedAuthorsList}. ${entry.issued["date-parts"][0][0]}. ${
     entry.title
   }. ${entry["container-title"]}. ${entry.page}. [DOI:${
@@ -298,9 +315,33 @@ ${entry.keyword
   .join(" ")}
 `;
 
-  const obsidianURL = `obsidian://new?vault=${encodeURIComponent(
+  let obsidianURL = `obsidian://new?vault=${encodeURIComponent(
     vault
   )}&file=${encodeURIComponent(file)}&content=${encodeURIComponent(body)}`;
+
+  // Shorten the body if the URL is too long. The maximum length of a URL is 3000 characters.
+  while (obsidianURL.length > 2950) {
+    abstract = abstract.slice(0, abstract.length - 10);
+
+    const body1 = `${linkedAuthorsList}. ${entry.issued["date-parts"][0][0]}. ${
+      entry.title
+    }. ${entry["container-title"]}. ${entry.page}. [DOI:${
+      entry.DOI
+    }](${addProxyURL(entry.URL)}).
+
+## Abstract
+${abstract}
+
+## Keywords
+${entry.keyword
+  ?.split(", ")
+  .map((keyword) => `#${keyword.replace(/\s/g, "_")}`)
+  .join(" ")}`;
+
+    obsidianURL = `obsidian://new?vault=${encodeURIComponent(
+      vault
+    )}&file=${encodeURIComponent(file)}&content=${encodeURIComponent(body1)}`;
+  }
 
   return obsidianURL;
 }
@@ -347,6 +388,11 @@ function sendPaper(paper, threadTs) {
     }
     if (transformedData?.abstract) {
       abstract = transformedData.abstract;
+    }
+
+    // abstractを3000文字未満にする
+    if (abstract.length > 3000) {
+      abstract = abstract.slice(0, 3000);
     }
 
     let contents = [
