@@ -18,7 +18,7 @@
 - **_保存_ボタン**: クリック一つで論文データをノートアプリケーションに保存できます。
 - **プロキシ対応**: 所属組織を通じて論文にアクセスするためのプロキシ URL を追加できます。
 
-<img width="400" alt="screenshot" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/edc1df44-7bc9-45bf-a539-bfc8cdbe11ca">
+<img width="400" alt="Screenshot 2025-04-20 at 15 55 06" src="https://github.com/user-attachments/assets/4eb5c023-02e7-4368-8a6f-2513c3663488" />
 
 ## 前提条件
 
