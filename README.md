@@ -18,7 +18,7 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
 - **_Save to_ buttons**: Save paper data to your notebook applications by a click.
 - **Proxy**: Append proxy URL to access papers through your organization.
 
-<img width="400" alt="screenshot" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/edc1df44-7bc9-45bf-a539-bfc8cdbe11ca">
+<img width="400" alt="Screenshot 2025-04-20 at 15 55 06" src="https://github.com/user-attachments/assets/4eb5c023-02e7-4368-8a6f-2513c3663488" />
 
 ## Prerequisites
 
