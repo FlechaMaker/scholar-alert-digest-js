@@ -1,5 +1,7 @@
 # Scholar Alert Digest for Google Apps Script
 
+[日本語のREADMEはこちら](README.ja.md)
+
 ## Overview
 
 This repository contains a JavaScript adaptation of Alexander Bezzubov's original Go-based project [bzz/scholar-alert-digest](https://github.com/bzz/scholar-alert-digest), designed to run on Google Apps Script. The purpose of this adaptation is to streamline the process of reviewing Google Scholar alerts by combining them into a single digest, with the added feature of posting alerts to Slack.
