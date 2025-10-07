@@ -415,7 +415,11 @@ function sendPaper(paper, threadTs) {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `:link: <${addProxyURL(paper.url)}|${paper.url}>`,
+          text: `:link: <${addProxyURL(paper.url)}|${
+            paper.url
+          }>\n🤿 <https://www.paperdive.app/?q=${encodeURIComponent(
+            paper.title
+          )}|PaperDive>`,
         },
       },
       {
