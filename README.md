@@ -1,5 +1,7 @@
 # Scholar Alert Digest for Google Apps Script
 
+[日本語のREADMEはこちら](README.ja.md)
+
 ## Overview
 
 This repository contains a JavaScript adaptation of Alexander Bezzubov's original Go-based project [bzz/scholar-alert-digest](https://github.com/bzz/scholar-alert-digest), designed to run on Google Apps Script. The purpose of this adaptation is to streamline the process of reviewing Google Scholar alerts by combining them into a single digest, with the added feature of posting alerts to Slack.
@@ -13,8 +15,10 @@ To reduce the effort of checking multiple Google Scholar Alerts emails by consol
 - **Aggregation of alerts**: Gathers information from Google Scholar Alert emails into a consolidated report.
 - **Sort by Alert Count**: Sorts the collected literature information by the number of alerts.
 - **Slack integration**: This script can post the sorted and aggregated alerts to Slack.
+- **_Save to_ buttons**: Save paper data to your notebook applications by a click.
+- **Proxy**: Append proxy URL to access papers through your organization.
 
-<img width="411" alt="スクリーンショット 2024-01-27 19 15 19" src="https://github.com/FlechaMaker/scholar-alert-digest-js/assets/6488324/670a111a-1b5f-4c7a-9a79-af9978a5f682">
+<img width="400" alt="Screenshot 2025-04-20 at 15 55 06" src="https://github.com/user-attachments/assets/4eb5c023-02e7-4368-8a6f-2513c3663488" />
 
 ## Prerequisites
 
@@ -45,6 +49,9 @@ clasp create --type standalone --title "Scholar Alert Digest"
 
 # Upload the script to the Google Apps Script project
 clasp push
+
+# Open the Google Apps Script project to continue the following settings
+clasp open
 ```
 
 or you can manually copy and paste JavaScript files (.js) to the Google Apps Script project.
@@ -53,10 +60,38 @@ or you can manually copy and paste JavaScript files (.js) to the Google Apps Scr
 
 Set the following script properties in the Google Apps script configuration.
 
-- [GMAIL_LABEL] Gmail label for Google Scholar Alerts. (e.g. Google Scholar)
-- [SLACK_TOKEN] Slack token for authentication. (e.g. xoxb-00000...)
-- [SLACK_CONVERSATION_ID] ID of the Slack channel where the alerts are posted. (e.g. C000000000000)
-  - You can copy the conversation ID by clicking right button on the channel name and selecting "Copy > Copy link".
+#### Gmail
+
+| Property Name | Required? | Description                            | Example        |
+| ------------- | --------- | -------------------------------------- | -------------- |
+| `GMAIL_LABEL` | Yes       | Gmail label for Google Scholar Alerts. | Google Scholar |
+
+#### Slack
+
+| Property Name           | Required? | Description                                          | Example       |
+| ----------------------- | --------- | ---------------------------------------------------- | ------------- |
+| `SLACK_TOKEN`           | Yes       | Slack token for authentication.                      | xoxb-00000... |
+| `SLACK_CONVERSATION_ID` | Yes       | ID of the Slack channel where the alerts are posted. | C000000000000 |
+
+#### Proxy
+
+| Property Name          | Required? | Description                                           | Example                                |
+| ---------------------- | --------- | ----------------------------------------------------- | -------------------------------------- |
+| `PROXY_URL`            | No        | Proxy URL to access papers through your organization. | https://utokyo.idm.oclc.org/login?url= |
+| `PROXY_IGNORE_DOMAINS` | No        | Space-separated list of domains to ignore the proxy.  | arxiv.org dl.acm.org                   |
+
+#### Obsidian
+
+| Property Name          | Required? | Description                                                                              | Example  |
+| ---------------------- | --------- | ---------------------------------------------------------------------------------------- | -------- |
+| `OBSIDIAN_VAULT`       | No        | Obsidian vault name to save the paper note.                                              | My vault |
+| `OBSIDIAN_FOLDER_PATH` | No        | Obsidian folder path to save the paper note. Set "/" if you save note in root directory. | Articles |
+
+#### Scrapbox
+
+| Property Name   | Required? | Description                                   | Example    |
+| --------------- | --------- | --------------------------------------------- | ---------- |
+| `SCRAPBOX_NAME` | No        | Scrapbox project name to save the paper note. | My project |
 
 ### Usage
 

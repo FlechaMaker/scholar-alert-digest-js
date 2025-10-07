@@ -1,9 +1,10 @@
 // Paper is a map key, thus aggregation takes into account all its fields.
 class Paper {
-  constructor(title, url, author = "", abstract, refs = [], freq = 1) {
+  constructor(title, url, authors = [], year, abstract, refs = [], freq = 1) {
     this.title = title;
     this.url = url;
-    this.author = author;
+    this.authors = authors;
+    this.year = year;
     this.abstract = abstract;
     this.refs = refs;
     this.frequency = freq;
@@ -71,7 +72,6 @@ class Stats {
   }
 }
 
-
 function aggregatePapersFromMessages(messages) {
   let status = new Stats(messages.length);
   let uniqTitles = new AggregatedPapers();
@@ -81,8 +81,7 @@ function aggregatePapersFromMessages(messages) {
     let papers;
     try {
       papers = extractPapersFromMessage(message, true);
-    }
-    catch (error) {
+    } catch (error) {
       status.errors++;
       console.error(error);
       continue;
@@ -99,7 +98,6 @@ function aggregatePapersFromMessages(messages) {
   return { status, processedMessages, uniqTitles };
 }
 
-
 function extractPapersFromMessage(message, includeAuthors) {
   const subject = message.getSubject();
   const body = message.getBody();
@@ -111,7 +109,9 @@ function extractPapersFromMessage(message, includeAuthors) {
   }
 
   // HTMLを解析
-  const titles = extractPaperTitlesFromHTML(body).map( (s) => decodeHtmlEntities(s) );
+  const titles = extractPaperTitlesFromHTML(body).map((s) =>
+    decodeHtmlEntities(s)
+  );
   const urls = extractURLFromHTML(body);
 
   if (titles.length !== urls.length) {
@@ -121,20 +121,25 @@ function extractPapersFromMessage(message, includeAuthors) {
 
   let citedPapers = [];
   if (sourceInfo.type == "citation") {
-    citedPapers = extractCitedPapers(body).map( (s) => decodeHtmlEntities(s) );
+    citedPapers = extractCitedPapers(body).map((s) => decodeHtmlEntities(s));
   }
 
-  const authors = extractH3FollowingSiblingDiv1(body).map( (s) => decodeHtmlEntities(s) );
-  const abstracts = extractH3FollowingSiblingDiv2(body).map( (s) => decodeHtmlEntities(s) );
+  const publicationStrs = extractH3FollowingSiblingDiv1(body).map((s) =>
+    decodeHtmlEntities(s)
+  );
+  const abstracts = extractH3FollowingSiblingDiv2(body).map((s) =>
+    decodeHtmlEntities(s)
+  );
 
   const papers = [];
-  let author = "";
   for (let i = 0; i < titles.length; i++) {
+    let authors = [];
     const title = titles[i].trim();
     const abstract = abstracts[i].trim().replace(/<br\s*\/?>/g, "");
     if (includeAuthors) {
-      author = extractAuthorFromElement(authors[i]);
+      authors = extractAuthorsFromElement(publicationStrs[i]);
     }
+    const year = extractYearFromElement(publicationStrs[i]);
 
     let url;
     try {
@@ -146,7 +151,11 @@ function extractPapersFromMessage(message, includeAuthors) {
 
     const maxChars = 80;
     const lookahead = 10;
-    const { firstLine, rest } = separateFirstLine(abstract, maxChars, lookahead);
+    const { firstLine, rest } = separateFirstLine(
+      abstract,
+      maxChars,
+      lookahead
+    );
     const abstractInfo = new Abstract(firstLine, rest);
 
     let currentSourceInfo;
@@ -159,13 +168,20 @@ function extractPapersFromMessage(message, includeAuthors) {
     }
 
     papers.push(
-      new Paper(title, url, author, abstractInfo, [new Ref(message.getId(), subject, currentSourceInfo)], 1)
+      new Paper(
+        title,
+        url,
+        authors,
+        year,
+        abstractInfo,
+        [new Ref(message.getId(), subject, currentSourceInfo)],
+        1
+      )
     );
   }
 
   return papers;
 }
-
 
 // "//h3/a"
 function extractPaperTitlesFromHTML(html) {
@@ -175,25 +191,29 @@ function extractPaperTitlesFromHTML(html) {
 
 // "//h3/a/@href"
 function extractURLFromHTML(html) {
-  const regex = /<h3[^>]*>[\s\S]*?<a[\s\S]*?href="([^"]+)"[\s\S]*?>[\s\S]*?<\/a>[\s\S]*?<\/h3>/gi;
+  const regex =
+    /<h3[^>]*>[\s\S]*?<a[\s\S]*?href="([^"]+)"[\s\S]*?>[\s\S]*?<\/a>[\s\S]*?<\/h3>/gi;
   return matchAll(regex, html);
 }
 
 // "//h3/following-sibling::div[1]"
 function extractH3FollowingSiblingDiv1(html) {
-  const regex = /<h3[^>]*?>[\s\S]*?<\/h3>[\s\S]*?<div[^>]*?>([\s\S]*?)<\/div>/gi;
+  const regex =
+    /<h3[^>]*?>[\s\S]*?<\/h3>[\s\S]*?<div[^>]*?>([\s\S]*?)<\/div>/gi;
   return matchAll(regex, html);
 }
 
 // "//h3/following-sibling::div[2]"
 function extractH3FollowingSiblingDiv2(html) {
-  const regex = /<h3[^>]*?>[\s\S]*?<\/h3>[\s\S]*?<div[^>]*?>[\s\S]*?<\/div>[\s\S]*?<div[^>]*?>([\s\S]*?)<\/div>/gi;
+  const regex =
+    /<h3[^>]*?>[\s\S]*?<\/h3>[\s\S]*?<div[^>]*?>[\s\S]*?<\/div>[\s\S]*?<div[^>]*?>([\s\S]*?)<\/div>/gi;
   return matchAll(regex, html);
 }
 
 // only works on citation type
 function extractCitedPapers(html) {
-  const regex = /(?:Cites: |引用: |1 件目の引用[\s\S]*?<\/span>[\s\S]*?<span[^>]*>)\u202a?([\s\S]+?)\u202c?&nbsp;&nbsp;<\/span>/gi;
+  const regex =
+    /(?:Cites: |引用: |1 件目の引用[\s\S]*?<\/span>[\s\S]*?<span[^>]*>)\u202a?([\s\S]+?)\u202c?&nbsp;&nbsp;<\/span>/gi;
   return matchAll(regex, html);
 }
 
@@ -209,22 +229,46 @@ function matchAll(regex, s) {
   return matches;
 }
 
+function extractAuthorsFromElement(publication) {
+  let authorsStr = publication.split("-")[0].trimRight();
 
-function extractAuthorFromElement(publication) {
-  let auth = publication;
+  const separators = /[,&;]|and|\n/gi;
+  const removePattern = new RegExp(
+    "[\\d†\\*…]" + // 数字、†、*, … を削除
+      "|(\\s[a-z])+(\\s*$)" + // 単一小文字による注釈を削除
+      // 名前以外の文字列・URLを削除
+      "|ORCID" +
+      "|View ORCID Profile" +
+      "|Author links open overlay panel" +
+      "|https?:\\/\\/\\S+",
+    "gi" // グローバル検索、大文字小文字を区別しない
+  );
+  const capitalize = (words) =>
+    words
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
 
-  for (let i = 0; i < publication.length; i++) {
-    if (publication.charAt(i) === '-') {
-      auth = publication.substring(0, i).trimRight();
-      break;
-    }
-  }
+  const authors = authorsStr
+    .replace(separators, ",")
+    .split(",")
+    .map((author) => author.replace(removePattern, "").trim())
+    .filter((author) => author.length > 1)
+    .map((author) => capitalize(author));
 
-  // Capitalize the first letter of each word and make the rest lowercase.
-  return auth.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+  return authors;
 }
 
-var scholarURLPrefix = new RegExp('http(s)?://scholar\\.google\\.[\\p{L}]+(\\.[\\p{L}]+)?/scholar_url\\?url=', 'u');
+function extractYearFromElement(publication) {
+  const yearMatch = publication.match(/(\d{4})$/);
+  return yearMatch ? parseInt(yearMatch[1]) : null;
+}
+
+var scholarURLPrefix = new RegExp(
+  "http(s)?://scholar\\.google\\.[\\p{L}]+(\\.[\\p{L}]+)?/scholar_url\\?url=",
+  "u"
+);
 
 // extractURLFromAttribute returns an actual paper URL from the given scholar link.
 // Does not validate URL format but extracts it ad-hoc by trimming suffix/prefix.
@@ -232,19 +276,20 @@ function extractURLFromAttribute(scholarURL) {
   // drop scholarURLPrefix
   var prefixLoc = scholarURL.match(scholarURLPrefix);
   if (!prefixLoc) {
-    throw new Error('URL "' + scholarURL + '" does not have the expected prefix.');
+    throw new Error(
+      'URL "' + scholarURL + '" does not have the expected prefix.'
+    );
   }
   var longURL = scholarURL.substring(prefixLoc[0].length);
 
   // drop suffix (after &), if any
-  var suffixIndex = longURL.indexOf('&');
+  var suffixIndex = longURL.indexOf("&");
   if (suffixIndex >= 0) {
     longURL = longURL.substring(0, suffixIndex);
   }
 
   return decodeURIComponent(longURL);
 }
-
 
 function extractSourceInfoFromSubject(subject) {
   let alertType = "";
@@ -256,12 +301,20 @@ function extractSourceInfoFromSubject(subject) {
     alertKey.push("me");
   }
   // Case: New articles for a specific author
-  else if (subject.includes("新しい論文") || subject.includes("new articles") || subject.includes("Новые статьи пользователя")) {
+  else if (
+    subject.includes("新しい論文") ||
+    subject.includes("new articles") ||
+    subject.includes("Новые статьи пользователя")
+  ) {
     alertType = "new paper";
     alertKey.push(subject.split(" - ")[0]);
   }
   // Case: New research related to a specific author
-  else if (subject.includes("関連する新しい研究") || subject.includes("new related research") || subject.includes("Новые статьи, связанные с работами автора")) {
+  else if (
+    subject.includes("関連する新しい研究") ||
+    subject.includes("new related research") ||
+    subject.includes("Новые статьи, связанные с работами автора")
+  ) {
     alertType = "new related research";
     alertKey.push(subject.split(" - ")[0]);
   }
@@ -271,7 +324,10 @@ function extractSourceInfoFromSubject(subject) {
     alertKey.push("me");
   }
   // Case: New citation with a specific keyword
-  else if (subject.includes("の論文からの引用") || subject.includes("to articles by")) {
+  else if (
+    subject.includes("の論文からの引用") ||
+    subject.includes("to articles by")
+  ) {
     alertType = "citation";
     if (subject.includes("さんの論文からの引用")) {
       alertKey.push(subject.split(" さんの論文からの引用")[0]);
@@ -282,17 +338,30 @@ function extractSourceInfoFromSubject(subject) {
         alertKey.push(authorName);
       }
     }
-  }
-  else if (subject.includes("新しい引用") || subject.includes("new citations") || subject.includes(": новые ссылки")) {
+  } else if (
+    subject.includes("新しい引用") ||
+    subject.includes("new citations") ||
+    subject.includes(": новые ссылки")
+  ) {
     alertType = "citation";
     alertKey.push(subject.split(";")[0].replace("「", ""));
-  }
-  else if (subject.includes("おすすめの論文") || subject.includes("Рекомендуемые статьи") /* || subject.includes("??? English ver.") */) {
+  } else if (
+    subject.includes("おすすめの論文") ||
+    subject.includes(
+      "Рекомендуемые статьи"
+    ) /* || subject.includes("??? English ver.") */
+  ) {
     alertType = "recommended paper";
-  } else if (subject.includes("新しい結果") || subject.includes("new results") || subject.includes("Новые результаты по запросу")) {
+  } else if (
+    subject.includes("新しい結果") ||
+    subject.includes("new results") ||
+    subject.includes("Новые результаты по запросу")
+  ) {
     alertType = "new results";
     let keyComponents = subject.split(";")[0];
-    alertKey = keyComponents.match(/"([^"]+)"/g).map(s => s.replace(/"/g, ''));
+    alertKey = keyComponents
+      .match(/"([^"]+)"/g)
+      .map((s) => s.replace(/"/g, ""));
   } else {
     alertType = "unknown";
   }
@@ -311,7 +380,7 @@ function separateFirstLine(text, N, lookahead) {
   let firstLine = words[0];
   for (let i = 1; i < words.length; i++) {
     if (firstLine.length + words[i].length <= N + lookahead) {
-      firstLine += ' ' + words[i];
+      firstLine += " " + words[i];
     } else {
       break;
     }
@@ -324,10 +393,12 @@ function separateFirstLine(text, N, lookahead) {
 
 // Decode all HTML escapes in the input
 function decodeHtmlEntities(input) {
-  return input.replace(/&#(\d+);/g, function (match, dec) {
-    return String.fromCharCode(dec);
-  }).replace(/&quot;/g, '"') // Convert &quot; to "
-    .replace(/&amp;/g, '&')   // Convert &amp; to &
-    .replace(/&lt;/g, '<')    // Convert &lt; to <
-    .replace(/&gt;/g, '>');   // Convert &gt; to >
+  return input
+    .replace(/&#(\d+);/g, function (match, dec) {
+      return String.fromCharCode(dec);
+    })
+    .replace(/&quot;/g, '"') // Convert &quot; to "
+    .replace(/&amp;/g, "&") // Convert &amp; to &
+    .replace(/&lt;/g, "<") // Convert &lt; to <
+    .replace(/&gt;/g, ">"); // Convert &gt; to >
 }
